@@ -11,7 +11,6 @@ function App() {
   const [vista, setVista] = useState<'examen' | 'resultados'>('examen')
   const [intensidadActual, setIntensidadActual] = useState<'1e' | '2e' | '4e'>('4e')
   
-  // Configuración de intensidades
   const intensidadConfig = {
     '1e': { tamaño: 4, color: '#ff9999', nombre: '1e (bajo)' },
     '2e': { tamaño: 8, color: '#ff6666', nombre: '2e (medio)' },
@@ -32,7 +31,6 @@ function App() {
     const cy = 300
     const radioMax = 250
 
-    // Generar posiciones si no existen
     if (posicionesExamen.length === 0) {
       const posiciones = []
       const angulos = [0, 45, 90, 135, 180, 225, 270, 315]
@@ -45,7 +43,6 @@ function App() {
       setPosicionesExamen(posiciones)
     }
 
-    // Dibujar retícula
     ctx.strokeStyle = '#ccc'
     ctx.lineWidth = 0.5
     for (let r = 50; r <= radioMax; r += 50) {
@@ -64,13 +61,11 @@ function App() {
       ctx.stroke()
     }
 
-    // Punto de fijación
     ctx.fillStyle = 'black'
     ctx.beginPath()
     ctx.arc(cx, cy, 3, 0, 2 * Math.PI)
     ctx.fill()
 
-    // Dibujar estímulo actual
     if (posicionesExamen.length > 0 && indiceActual < posicionesExamen.length) {
       const pos = posicionesExamen[indiceActual]
       const rad = (pos.angulo * Math.PI) / 180
@@ -139,7 +134,6 @@ function App() {
     }
   }
 
-  // 📄 Exportar resultados a PDF profesional - VERSIÓN CORREGIDA Y COMPLETA
   const exportarPDF = async () => {
     try {
       const jsPDF = (await import('jspdf')).default
@@ -158,7 +152,6 @@ function App() {
         format: 'a4'
       })
       
-      // Título y marca
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(20)
       doc.setTextColor(10, 25, 40)
@@ -170,16 +163,15 @@ function App() {
       doc.text(`by JozseDev © ${new Date().getFullYear()}`, 20, 30)
       doc.line(20, 35, 280, 35)
       
-      // Información del examen
+      const respuestasOjo = respuestas.filter(r => r.ojo === ojoActual)
+      
       doc.setFontSize(11)
       doc.setTextColor(50, 50, 50)
       doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 20, 45)
       doc.text(`Hora: ${new Date().toLocaleTimeString()}`, 20, 52)
       doc.text(`Ojo evaluado: ${ojoActual === 'OD' ? 'Derecho (OD)' : 'Izquierdo (OI)'}`, 20, 59)
-      doc.text(`Total de estímulos: ${respuestas.filter(r => r.ojo === ojoActual).length}`, 20, 66)
+      doc.text(`Total de estímulos: ${respuestasOjo.length}`, 20, 66)
       
-      // Estadísticas filtradas por ojo actual
-      const respuestasOjo = respuestas.filter(r => r.ojo === ojoActual)
       const vistas = respuestasOjo.filter(r => r.visto).length
       const noVistas = respuestasOjo.filter(r => !r.visto).length
       const porcentajeVisto = respuestasOjo.length > 0 ? ((vistas / respuestasOjo.length) * 100).toFixed(1) : '0'
@@ -188,10 +180,8 @@ function App() {
       doc.text(`Vistos: ${vistas} (${porcentajeVisto}%)`, 120, 45)
       doc.text(`No vistos: ${noVistas} (${porcentajeNoVisto}%)`, 120, 52)
       
-      // Gráfico
       doc.addImage(imgData, 'PNG', 20, 75, 140, 140)
       
-      // Tabla de resultados por intensidad (FILTRADA POR OJO)
       if (respuestasOjo.length > 0) {
         const intensidades = ['1e', '2e', '4e']
         const tablaData = intensidades.map(int => {
@@ -211,29 +201,16 @@ function App() {
           head: [['Intensidad', 'Vistos/Total', 'Porcentaje']],
           body: tablaData,
           theme: 'grid',
-          headStyles: { 
-            fillColor: [10, 25, 40],
-            textColor: [255, 255, 255],
-            fontStyle: 'bold'
-          },
-          columnStyles: {
-            0: { cellWidth: 30 },
-            1: { cellWidth: 40 },
-            2: { cellWidth: 30 }
-          },
+          headStyles: { fillColor: [10, 25, 40], textColor: [255, 255, 255], fontStyle: 'bold' },
+          columnStyles: { 0: { cellWidth: 30 }, 1: { cellWidth: 40 }, 2: { cellWidth: 30 } },
           margin: { left: 20, right: 20 }
         })
       }
       
-      // Footer
       const finalY = (doc as any).lastAutoTable?.finalY || 250
       doc.setFontSize(9)
       doc.setTextColor(150, 150, 150)
-      doc.text(
-        'Informe generado automáticamente · Perimetría de Campo Visual by JozseDev',
-        20,
-        finalY + 20
-      )
+      doc.text('Informe generado automáticamente · Perimetría de Campo Visual by JozseDev', 20, finalY + 20)
       
       doc.save(`perimetria-${ojoActual}-${new Date().toISOString().slice(0, 10)}.pdf`)
       alert('✅ PDF generado exitosamente')
@@ -244,83 +221,123 @@ function App() {
     }
   }
 
+  const isMobile = window.innerWidth < 600
+
   return (
     <div style={{ 
       display: 'flex', 
       flexDirection: 'column', 
       alignItems: 'center', 
-      justifyContent: 'center', 
-      height: '100vh' 
+      justifyContent: 'flex-start',
+      minHeight: '100vh',
+      padding: isMobile ? '10px' : '20px',
+      boxSizing: 'border-box'
     }}>
       
-      <h1>Perimetría de Campo Visual · JozseDev</h1>
+      {/* TÍTULO RESPONSIVO */}
+      <h1 style={{ 
+        fontSize: isMobile ? '1.4rem' : '2rem',
+        textAlign: 'center',
+        margin: isMobile ? '5px 0 10px 0' : '10px 0 20px 0',
+        wordBreak: 'break-word',
+        color: '#0a1928'
+      }}>
+        {isMobile ? 'Perimetría · JozseDev' : 'Perimetría de Campo Visual · JozseDev'}
+      </h1>
       
-      {/* SELECTOR DE INTENSIDAD */}
-      <div style={{ marginBottom: '15px', display: 'flex', gap: '10px', alignItems: 'center' }}>
-        <span style={{ fontWeight: 'bold' }}>Intensidad:</span>
+      {/* SELECTOR DE INTENSIDAD - RESPONSIVO */}
+      <div style={{ 
+        marginBottom: isMobile ? '10px' : '15px', 
+        display: 'flex', 
+        flexWrap: 'wrap',
+        gap: isMobile ? '5px' : '10px', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        width: '100%'
+      }}>
+        <span style={{ fontWeight: 'bold', marginRight: '5px' }}>Intensidad:</span>
         {Object.entries(intensidadConfig).map(([key, config]) => (
           <button
             key={key}
             onClick={() => setIntensidadActual(key as '1e' | '2e' | '4e')}
             style={{
-              padding: '6px 12px',
+              padding: isMobile ? '8px 12px' : '6px 12px',
               background: intensidadActual === key ? config.color : '#eee',
               color: intensidadActual === key ? 'white' : '#333',
               border: 'none',
               borderRadius: '4px',
               cursor: 'pointer',
-              fontWeight: intensidadActual === key ? 'bold' : 'normal'
+              fontWeight: intensidadActual === key ? 'bold' : 'normal',
+              flex: isMobile ? '1 0 auto' : 'none'
             }}
           >
-            {config.nombre}
+            {isMobile ? key : config.nombre}
           </button>
         ))}
       </div>
 
-      {/* SELECTOR DE OJO */}
-      <div style={{ marginBottom: '15px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+      {/* SELECTOR DE OJO - RESPONSIVO */}
+      <div style={{ 
+        marginBottom: isMobile ? '15px' : '15px', 
+        display: 'flex', 
+        flexWrap: 'wrap',
+        gap: isMobile ? '10px' : '10px', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        width: '100%'
+      }}>
         <span style={{ fontWeight: 'bold' }}>Ojo:</span>
         <button
           onClick={() => setOjoActual('OD')}
           style={{
-            padding: '6px 12px',
+            padding: isMobile ? '10px 20px' : '6px 12px',
             background: ojoActual === 'OD' ? '#4d8fcc' : '#eee',
             color: ojoActual === 'OD' ? 'white' : '#333',
             border: 'none',
             borderRadius: '4px',
             cursor: 'pointer',
-            fontWeight: ojoActual === 'OD' ? 'bold' : 'normal'
+            fontWeight: ojoActual === 'OD' ? 'bold' : 'normal',
+            flex: isMobile ? '1 0 40%' : 'none'
           }}
         >
-          👁️ Derecho (OD)
+          👁️ {isMobile ? 'OD' : 'Derecho (OD)'}
         </button>
         <button
           onClick={() => setOjoActual('OI')}
           style={{
-            padding: '6px 12px',
+            padding: isMobile ? '10px 20px' : '6px 12px',
             background: ojoActual === 'OI' ? '#4d8fcc' : '#eee',
             color: ojoActual === 'OI' ? 'white' : '#333',
             border: 'none',
             borderRadius: '4px',
             cursor: 'pointer',
-            fontWeight: ojoActual === 'OI' ? 'bold' : 'normal'
+            fontWeight: ojoActual === 'OI' ? 'bold' : 'normal',
+            flex: isMobile ? '1 0 40%' : 'none'
           }}
         >
-          👁️ Izquierdo (OI)
+          👁️ {isMobile ? 'OI' : 'Izquierdo (OI)'}
         </button>
       </div>
       
-      {/* BOTONES DE VISTA */}
-      <div style={{ marginBottom: '20px', display: 'flex', gap: '10px' }}>
+      {/* BOTONES DE VISTA - RESPONSIVO */}
+      <div style={{ 
+        marginBottom: isMobile ? '20px' : '20px', 
+        display: 'flex', 
+        gap: isMobile ? '15px' : '10px',
+        justifyContent: 'center',
+        width: '100%'
+      }}>
         <button 
           onClick={() => setVista('examen')}
           style={{ 
-            padding: '8px 16px', 
+            padding: isMobile ? '12px 20px' : '8px 16px', 
             background: vista === 'examen' ? '#007bff' : '#ccc',
             color: 'white',
             border: 'none',
             borderRadius: '4px',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            flex: isMobile ? '1 0 40%' : 'none'
           }}
         >
           Tomar Examen
@@ -328,12 +345,14 @@ function App() {
         <button 
           onClick={() => setVista('resultados')}
           style={{ 
-            padding: '8px 16px', 
+            padding: isMobile ? '12px 20px' : '8px 16px', 
             background: vista === 'resultados' ? '#28a745' : '#ccc',
             color: 'white',
             border: 'none',
             borderRadius: '4px',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            flex: isMobile ? '1 0 40%' : 'none'
           }}
         >
           Ver Resultados
@@ -342,28 +361,67 @@ function App() {
 
       {vista === 'examen' ? (
         <>
-          <canvas 
-            ref={canvasRef}
-            width={600}
-            height={600}
-            onClick={handleCanvasClick}
-            style={{ 
-              border: '2px solid black',
-              backgroundColor: 'white'
-            }}
-          />
-          <p>Posición {indiceActual + 1} de {posicionesExamen.length} · Ojo: {ojoActual === 'OD' ? 'Derecho' : 'Izquierdo'}</p>
+          {/* CANVAS RESPONSIVO */}
+          <div style={{ 
+            width: '100%', 
+            maxWidth: '600px', 
+            aspectRatio: '1/1',
+            margin: '0 auto'
+          }}>
+            <canvas 
+              ref={canvasRef}
+              width={600}
+              height={600}
+              onClick={handleCanvasClick}
+              style={{ 
+                width: '100%',
+                height: '100%',
+                border: '2px solid black',
+                backgroundColor: 'white'
+              }}
+            />
+          </div>
+          <p style={{ 
+            marginTop: '15px', 
+            fontSize: isMobile ? '0.9rem' : '1rem',
+            textAlign: 'center'
+          }}>
+            Posición {indiceActual + 1} de {posicionesExamen.length} · Ojo: {ojoActual === 'OD' ? 'Derecho' : 'Izquierdo'}
+          </p>
         </>
       ) : (
-        <div style={{ textAlign: 'center' }}>
-          <h2>Resultados del Examen</h2>
-          <Islotes respuestas={respuestas.filter(r => r.ojo === ojoActual)} />
-          <p style={{ marginTop: '10px' }}>
+        <div style={{ 
+          textAlign: 'center', 
+          width: '100%',
+          maxWidth: '600px',
+          margin: '0 auto'
+        }}>
+          <h2 style={{ fontSize: isMobile ? '1.3rem' : '1.5rem' }}>Resultados del Examen</h2>
+          
+          {/* CONTENEDOR DE ISLOTES RESPONSIVO */}
+          <div style={{ 
+            width: '100%', 
+            maxWidth: '600px', 
+            aspectRatio: '1/1',
+            margin: '0 auto'
+          }}>
+            <Islotes respuestas={respuestas.filter(r => r.ojo === ojoActual)} />
+          </div>
+          
+          <p style={{ marginTop: '10px', fontSize: isMobile ? '0.8rem' : '1rem' }}>
             🟢 Visto | 🔴 No visto | 🟦 Islote de visión
           </p>
           
-          {/* BOTONES DE ACCIÓN */}
-          <div style={{ marginTop: '20px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
+          {/* BOTONES DE ACCIÓN - RESPONSIVO */}
+          <div style={{ 
+            marginTop: '20px', 
+            display: 'flex', 
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: '10px', 
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: '100%'
+          }}>
             <button 
               onClick={async () => {
                 try {
@@ -376,13 +434,14 @@ function App() {
                 }
               }}
               style={{
-                padding: '8px 16px',
+                padding: isMobile ? '12px 20px' : '8px 16px',
                 background: '#17a2b8',
                 color: 'white',
                 border: 'none',
                 borderRadius: '4px',
                 cursor: 'pointer',
-                fontWeight: 'bold'
+                fontWeight: 'bold',
+                width: isMobile ? '100%' : 'auto'
               }}
             >
               📥 Cargar desde DB
@@ -391,13 +450,14 @@ function App() {
             <button 
               onClick={exportarPDF}
               style={{
-                padding: '8px 16px',
+                padding: isMobile ? '12px 20px' : '8px 16px',
                 background: '#dc3545',
                 color: 'white',
                 border: 'none',
                 borderRadius: '4px',
                 cursor: 'pointer',
-                fontWeight: 'bold'
+                fontWeight: 'bold',
+                width: isMobile ? '100%' : 'auto'
               }}
             >
               📄 Exportar a PDF
@@ -405,6 +465,19 @@ function App() {
           </div>
         </div>
       )}
+      
+      {/* FOOTER RESPONSIVO */}
+      <footer style={{ 
+        marginTop: '30px', 
+        color: '#666', 
+        fontSize: isMobile ? '11px' : '13px',
+        borderTop: '1px solid #eee',
+        paddingTop: '20px',
+        width: '100%',
+        textAlign: 'center'
+      }}>
+        Perimetría de Campo Visual · by <strong>JozseDev</strong> © {new Date().getFullYear()}
+      </footer>
     </div>
   )
 }
