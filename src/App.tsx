@@ -120,7 +120,7 @@ function App() {
       setRespuestas([...respuestas, nuevaRespuesta])
       console.log('📋 Respuesta:', nuevaRespuesta)
 
-      fetch('http://localhost:3001/api/guardar', {
+      fetch('https://perimetria-campo-visual-production.up.railway.app/api/guardar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(nuevaRespuesta)
@@ -367,7 +367,7 @@ function App() {
             <button 
               onClick={async () => {
                 try {
-                  const res = await fetch('http://localhost:3001/api/respuestas')
+                  const res = await fetch('https://perimetria-campo-visual-production.up.railway.app/api/respuestas')
                   const data = await res.json()
                   setRespuestas(data)
                   alert('✅ Respuestas cargadas desde la base de datos')
