@@ -147,7 +147,6 @@ function App() {
 
   if (posicionesExamen.length > 0 && indiceActual < posicionesExamen.length) {
     const posActual = posicionesExamen[indiceActual]
-    const config = intensidadConfig[intensidadActual as IntensidadGoldmann]
     
     const nuevaRespuesta = {
       id: crypto.randomUUID(),
@@ -155,21 +154,24 @@ function App() {
       distancia: posActual.distancia,
       grado: posActual.grado,
       intensidad: intensidadActual,
-      tamaño: config.tamaño,
+      tamaño: intensidadConfig[intensidadActual as IntensidadGoldmann].tamaño,
       ojo: ojoActual,
       visto: distancia < 20,
       timestamp: new Date().toLocaleString()
     }
 
     setRespuestas([...respuestas, nuevaRespuesta])
+    
+    // ✅ CONFIRMACIÓN EN CONSOLA
     console.log('📋 Respuesta:', nuevaRespuesta)
+    console.log('✅ Respuesta guardada exitosamente')
   }
 
   if (indiceActual < posicionesExamen.length - 1) {
     setIndiceActual(indiceActual + 1)
   } else {
     alert('🎉 ¡Examen completado!')
-    console.log('📊 Total de respuestas:', respuestas)
+    console.log('📊 Total de respuestas:', respuestas.length + 1)
     setIndiceActual(0)
   }
 }
