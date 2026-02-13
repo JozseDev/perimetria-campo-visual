@@ -276,7 +276,8 @@ setTimeout(() => setFeedback(''), 1500)
       justifyContent: 'flex-start',
       minHeight: '100vh',
       padding: isMobile ? '10px' : '20px',
-      boxSizing: 'border-box'
+      boxSizing: 'border-box',
+      background: 'linear-gradient(145deg, #f8faff 0%, #eef3f7 100%)'
     }}>
       {/* ✅ FEEDBACK VISUAL - PONELO ACÁ, ARRIBA DEL TÍTULO */}
     {feedback && (
