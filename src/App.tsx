@@ -129,7 +129,7 @@ function App() {
       ctx.font = 'bold 12px Arial'
       ctx.fillText(`${pos.grado}°`, estX + 15, estY - 15)
     }
-  }, [indiceActual, posicionesExamen])
+  }, [indiceActual, posicionesExamen, vista])  // ✅ AGREGAMOS vista
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
   const canvas = canvasRef.current
