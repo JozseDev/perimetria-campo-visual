@@ -15,32 +15,48 @@ export default function Islotes({ respuestas, width = 600, height = 600 }: Props
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    // Limpiar
     ctx.clearRect(0, 0, width, height)
 
-    // Dibujar retícula de fondo (misma que el examen)
-    ctx.strokeStyle = '#eee'
-    ctx.lineWidth = 0.5
+    // ============================================
+    // 1. RETÍCULA EN GRADOS (IGUAL QUE EL EXAMEN)
+    // ============================================
     const cx = 300
     const cy = 300
-    const radioMax = 250
+    const PX_POR_GRADO = 3.5
+    const gradosMax = 70
 
-    // Círculos concéntricos
-    for (let r = 50; r <= radioMax; r += 50) {
+    // Círculos concéntricos (10° a 70°)
+    ctx.strokeStyle = '#eee'
+    ctx.lineWidth = 0.5
+    const grados = [10, 20, 30, 40, 50, 60, 70]
+    grados.forEach(g => {
+      const r = g * PX_POR_GRADO
       ctx.beginPath()
       ctx.arc(cx, cy, r, 0, 2 * Math.PI)
       ctx.stroke()
-    }
+      
+      // Etiqueta de grados
+      ctx.fillStyle = '#999'
+      ctx.font = '10px Arial'
+      ctx.fillText(`${g}°`, cx + r - 15, cy - 5)
+    })
 
-    // Líneas radiales
+    // Líneas radiales cada 30°
+    ctx.strokeStyle = '#eee'
+    ctx.lineWidth = 0.5
     for (let ang = 0; ang < 360; ang += 30) {
       const rad = (ang * Math.PI) / 180
-      const x = cx + Math.cos(rad) * radioMax
-      const y = cy + Math.sin(rad) * radioMax
+      const x = cx + Math.cos(rad) * (gradosMax * PX_POR_GRADO)
+      const y = cy + Math.sin(rad) * (gradosMax * PX_POR_GRADO)
       ctx.beginPath()
       ctx.moveTo(cx, cy)
       ctx.lineTo(x, y)
       ctx.stroke()
+      
+      // Etiqueta de ángulos
+      ctx.fillStyle = '#999'
+      ctx.font = '10px Arial'
+      ctx.fillText(`${ang}°`, x + 5, y - 5)
     }
 
     // Punto de fijación
@@ -49,19 +65,26 @@ export default function Islotes({ respuestas, width = 600, height = 600 }: Props
     ctx.arc(cx, cy, 3, 0, 2 * Math.PI)
     ctx.fill()
 
-    // SI HAY RESPUESTAS, DIBUJAR ISLOTES
+    // ============================================
+    // 2. DIBUJAR PUNTOS (VISTOS/NO VISTOS)
+    // ============================================
     if (respuestas.length > 0) {
-      // Agrupar respuestas por ángulo y distancia
-      const puntosVistos = respuestas.filter(r => r.visto === true)
-      const puntosNoVistos = respuestas.filter(r => r.visto === false)
+      // Filtrar respuestas con grado (para compatibilidad)
+      const respuestasConGrado = respuestas.map(r => ({
+        ...r,
+        grado: r.grado || Math.round(r.distancia / PX_POR_GRADO)
+      }))
 
-      // Dibujar puntos VISTOS (verdes)
+      const puntosVistos = respuestasConGrado.filter(r => r.visto === true)
+      const puntosNoVistos = respuestasConGrado.filter(r => r.visto === false)
+
+      // Puntos VISTOS (verde)
       puntosVistos.forEach(r => {
         const rad = (r.angulo * Math.PI) / 180
-        const x = cx + Math.cos(rad) * r.distancia
-        const y = cy + Math.sin(rad) * r.distancia
+        const x = cx + Math.cos(rad) * (r.grado * PX_POR_GRADO)
+        const y = cy + Math.sin(rad) * (r.grado * PX_POR_GRADO)
         
-        ctx.fillStyle = '#00ff00'
+        ctx.fillStyle = '#00aa00'
         ctx.beginPath()
         ctx.arc(x, y, 4, 0, 2 * Math.PI)
         ctx.fill()
@@ -70,13 +93,13 @@ export default function Islotes({ respuestas, width = 600, height = 600 }: Props
         ctx.fillText('✓', x - 3, y - 8)
       })
 
-      // Dibujar puntos NO VISTOS (rojos)
+      // Puntos NO VISTOS (rojo)
       puntosNoVistos.forEach(r => {
         const rad = (r.angulo * Math.PI) / 180
-        const x = cx + Math.cos(rad) * r.distancia
-        const y = cy + Math.sin(rad) * r.distancia
+        const x = cx + Math.cos(rad) * (r.grado * PX_POR_GRADO)
+        const y = cy + Math.sin(rad) * (r.grado * PX_POR_GRADO)
         
-        ctx.fillStyle = '#ff0000'
+        ctx.fillStyle = '#ff3333'
         ctx.beginPath()
         ctx.arc(x, y, 4, 0, 2 * Math.PI)
         ctx.fill()
@@ -85,27 +108,27 @@ export default function Islotes({ respuestas, width = 600, height = 600 }: Props
         ctx.fillText('✗', x - 3, y - 8)
       })
 
-      // DIBUJAR ISLOTE (contorno suave)
-      // Esto crea una línea que envuelve los puntos vistos
-      ctx.strokeStyle = '#0066cc'
-      ctx.lineWidth = 2
+      // ============================================
+      // 3. ISOPTERA (LÍNEA NEGRA, NO ÁREA AZUL)
+      // ============================================
+      ctx.strokeStyle = 'black'
+      ctx.lineWidth = 1.5
+      ctx.setLineDash([3, 3]) // Línea punteada como Goldmann
       
-      // Para simplificar, dibujamos una curva que conecta los puntos más externos
       const angulosUnicos = [...new Set(respuestas.map(r => r.angulo))].sort((a,b) => a - b)
       
       ctx.beginPath()
       let primero = true
       
       angulosUnicos.forEach(angulo => {
-        // Encontrar la distancia MÁXIMA vista para este ángulo
-        const vistasEnAngulo = respuestas
+        const vistasEnAngulo = respuestasConGrado
           .filter(r => r.angulo === angulo && r.visto === true)
         
         if (vistasEnAngulo.length > 0) {
-          const maxDist = Math.max(...vistasEnAngulo.map(r => r.distancia))
+          const maxGrado = Math.max(...vistasEnAngulo.map(r => r.grado))
           const rad = (angulo * Math.PI) / 180
-          const x = cx + Math.cos(rad) * maxDist
-          const y = cy + Math.sin(rad) * maxDist
+          const x = cx + Math.cos(rad) * (maxGrado * PX_POR_GRADO)
+          const y = cy + Math.sin(rad) * (maxGrado * PX_POR_GRADO)
           
           if (primero) {
             ctx.moveTo(x, y)
@@ -117,11 +140,8 @@ export default function Islotes({ respuestas, width = 600, height = 600 }: Props
       })
       
       ctx.closePath()
-      ctx.strokeStyle = '#0066cc'
-      ctx.lineWidth = 2
       ctx.stroke()
-      ctx.fillStyle = 'rgba(0,102,204,0.1)'
-      ctx.fill()
+      ctx.setLineDash([]) // Restaurar línea sólida
     }
 
   }, [respuestas, width, height])
