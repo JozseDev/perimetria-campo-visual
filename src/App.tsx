@@ -305,7 +305,7 @@ setTimeout(() => setFeedback(''), 1500)
         wordBreak: 'break-word',
         color: '#ffffff'
       }}>
-        {isMobile ? 'Campimetría cinética · JozseDev' : 'Campimetría cinética'}
+        {isMobile ? 'Campimetría cinética' : 'Campimetría cinética'}
       </h1>
       
       {/* SELECTOR DE INTENSIDAD - GOLDMANN REAL */}
