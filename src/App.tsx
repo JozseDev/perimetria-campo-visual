@@ -13,7 +13,8 @@ function App() {
   const [vista, setVista] = useState<'examen' | 'resultados'>('examen')
   const [intensidadActual, setIntensidadActual] = useState<IntensidadGoldmann>('0.0')
   const [ojoActual, setOjoActual] = useState<'OD' | 'OI'>('OD')
-  
+  const [feedback, setFeedback] = useState('')
+
   // Configuración de intensidades estilo Goldmann real
   const intensidadConfig = {
     '0.0': { tamaño: 14, color: '#000000', nombre: '0.0 (máx)' },
@@ -165,6 +166,12 @@ function App() {
     // ✅ CONFIRMACIÓN EN CONSOLA
     console.log('📋 Respuesta:', nuevaRespuesta)
     console.log('✅ Respuesta guardada exitosamente')
+
+    // Después de setRespuestas y console.log
+setFeedback('✅ Respuesta guardada')
+
+// Limpiar el mensaje después de 1.5 segundos
+setTimeout(() => setFeedback(''), 1500)
   }
 
   if (indiceActual < posicionesExamen.length - 1) {
@@ -271,6 +278,24 @@ function App() {
       padding: isMobile ? '10px' : '20px',
       boxSizing: 'border-box'
     }}>
+      {/* ✅ FEEDBACK VISUAL - PONELO ACÁ, ARRIBA DEL TÍTULO */}
+    {feedback && (
+      <div style={{
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        background: '#28a745',
+        color: 'white',
+        padding: '12px 24px',
+        borderRadius: '8px',
+        fontWeight: 'bold',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        zIndex: 9999,
+        animation: 'slideIn 0.3s ease'
+      }}>
+        {feedback}
+      </div>
+    )}
       
       <h1 style={{ 
         fontSize: isMobile ? '1.5rem' : '2rem',
