@@ -204,7 +204,7 @@ setTimeout(() => setFeedback(''), 1500)
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(20)
       doc.setTextColor(10, 25, 40)
-      doc.text('Perimetría de Campo Visual', 20, 20)
+      doc.text('Campimetría cinética', 20, 20)
       
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(11)
@@ -257,7 +257,7 @@ setTimeout(() => setFeedback(''), 1500)
       const finalY = (doc as any).lastAutoTable?.finalY || 250
       doc.setFontSize(9)
       doc.setTextColor(150, 150, 150)
-      doc.text('Informe generado automáticamente · Perimetría de Campo Visual by JozseDev', 20, finalY + 20)
+      doc.text('Informe generado automáticamente · Campimetría cinética by JozseDev', 20, finalY + 20)
       
       doc.save(`perimetria-${ojoActual}-${new Date().toISOString().slice(0, 10)}.pdf`)
       alert('✅ PDF generado exitosamente')
@@ -305,7 +305,7 @@ setTimeout(() => setFeedback(''), 1500)
         wordBreak: 'break-word',
         color: '#ffffff'
       }}>
-        {isMobile ? 'Perimetría · JozseDev' : 'Perimetría de Campo Visual · JozseDev'}
+        {isMobile ? 'Campimetría cinética · JozseDev' : 'Campimetría cinética'}
       </h1>
       
       {/* SELECTOR DE INTENSIDAD - GOLDMANN REAL */}
@@ -497,14 +497,14 @@ setTimeout(() => setFeedback(''), 1500)
       
       <footer style={{ 
         marginTop: '30px', 
-        color: '#666', 
+        color: '#dfdfdf', 
         fontSize: isMobile ? '11px' : '13px',
         borderTop: '1px solid #eee',
         paddingTop: '20px',
         width: '100%',
         textAlign: 'center'
       }}>
-        Perimetría de Campo Visual · by <strong>JozseDev</strong> © {new Date().getFullYear()}
+        Campimetría cinética · by <strong>JozseDev</strong> © {new Date().getFullYear()}
       </footer>
     </div>
   )
