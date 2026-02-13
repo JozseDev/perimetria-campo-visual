@@ -497,9 +497,9 @@ setTimeout(() => setFeedback(''), 1500)
       
       <footer style={{ 
         marginTop: '30px', 
-        color: '#dfdfdf', 
+        color: '#b8b8b8', 
         fontSize: isMobile ? '11px' : '13px',
-        borderTop: '1px solid #eee',
+        borderTop: '1px solid #b8b8b8',
         paddingTop: '20px',
         width: '100%',
         textAlign: 'center'
