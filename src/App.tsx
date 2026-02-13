@@ -291,7 +291,7 @@ function App() {
         width: '100%'
       }}>
         <span style={{ fontWeight: 'bold', marginRight: '5px' }}>Intensidad:</span>
-        {Object.entries(intensidadConfig).map(([key, config]) => (
+        {Object.entries(intensidadConfig).map(([key]) => (
           <button
             key={key}
             onClick={() => setIntensidadActual(key as IntensidadGoldmann)}
