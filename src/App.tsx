@@ -15,6 +15,11 @@ function App() {
   const [ojoActual, setOjoActual] = useState<'OD' | 'OI'>('OD')
   const [feedback, setFeedback] = useState('')
   const [mostrarIntro, setMostrarIntro] = useState(true)
+  const [mostrarDatosPaciente, setMostrarDatosPaciente] = useState(false)
+  const [fechaExamen, setFechaExamen] = useState<Date>(new Date())
+  const [horaExamen, setHoraExamen] = useState('10:00')
+  const [nombrePaciente, setNombrePaciente] = useState('')
+  const [nombreExaminador, setNombreExaminador] = useState('')
 
   // Configuración de intensidades estilo Goldmann real
   const intensidadConfig = {
@@ -184,94 +189,249 @@ setTimeout(() => setFeedback(''), 1500)
   }
 }
 
-  const exportarPDF = async () => {
-    try {
-      const jsPDF = (await import('jspdf')).default
-      const html2canvas = (await import('html2canvas')).default
-      const { default: autoTable } = await import('jspdf-autotable')
-      
-      const canvasElement = document.querySelector('canvas')
-      if (!canvasElement) throw new Error('No se encontró el canvas')
-      
-      const canvasImg = await html2canvas(canvasElement)
-      const imgData = canvasImg.toDataURL('image/png')
-      
-      const doc = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a4'
-      })
-      
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(20)
-      doc.setTextColor(10, 25, 40)
-      doc.text('Campimetría cinética', 20, 20)
-      
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(11)
-      doc.setTextColor(100, 100, 100)
-      doc.text(`by JozseDev © ${new Date().getFullYear()}`, 20, 30)
-      doc.line(20, 35, 280, 35)
-      
-      const respuestasOjo = respuestas.filter(r => r.ojo === ojoActual)
-      
-      doc.setFontSize(11)
-      doc.setTextColor(50, 50, 50)
-      doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 20, 45)
-      doc.text(`Hora: ${new Date().toLocaleTimeString()}`, 20, 52)
-      doc.text(`Ojo evaluado: ${ojoActual === 'OD' ? 'Derecho (OD)' : 'Izquierdo (OI)'}`, 20, 59)
-      doc.text(`Total de estímulos: ${respuestasOjo.length}`, 20, 66)
-      
-      const vistas = respuestasOjo.filter(r => r.visto).length
-      const noVistas = respuestasOjo.filter(r => !r.visto).length
-      const porcentajeVisto = respuestasOjo.length > 0 ? ((vistas / respuestasOjo.length) * 100).toFixed(1) : '0'
-      
-      doc.text(`Vistos: ${vistas} (${porcentajeVisto}%)`, 120, 45)
-      doc.text(`No vistos: ${noVistas} (${(100 - parseFloat(porcentajeVisto)).toFixed(1)}%)`, 120, 52)
-      
-      doc.addImage(imgData, 'PNG', 20, 75, 140, 140)
-      
-      if (respuestasOjo.length > 0) {
-        const intensidades = ['0.0', '0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', '0.8', '0.9', '1.0']
-        const tablaData = intensidades.map(int => {
-          const respuestasInt = respuestasOjo.filter(r => r.intensidad === int)
-          const vistasInt = respuestasInt.filter(r => r.visto).length
-          const totalInt = respuestasInt.length
-          
-          return [
-            int,
-            `${vistasInt}/${totalInt}`,
-            `${totalInt > 0 ? ((vistasInt / totalInt) * 100).toFixed(0) : 0}%`
-          ]
+const exportarPDF = async () => {
+  try {
+    const jsPDF = (await import('jspdf')).default
+    const html2canvas = (await import('html2canvas')).default
+    const { default: autoTable } = await import('jspdf-autotable')
+
+    const canvasElement = document.querySelector('canvas')
+    if (!canvasElement) throw new Error('No se encontró el canvas')
+
+    const canvasImg = await html2canvas(canvasElement, {
+      scale: 2,
+      backgroundColor: '#ffffff'
+    })
+    const imgData = canvasImg.toDataURL('image/png')
+
+    // ============================================
+    // CONFIGURACIÓN INICIAL
+    // ============================================
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    })
+
+    // ✅ FORZAR FUENTE ESTÁNDAR (Times Roman es más compatible)
+    doc.setFont('times', 'normal')
+
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const pageHeight = doc.internal.pageSize.getHeight()
+    let currentPage = 1
+
+    // ============================================
+    // FUNCIÓN PARA AGREGAR ENCABEZADO (LOGO)
+    // ============================================
+    const addHeader = async () => {
+      try {
+        const imgPath = window.location.origin + '/Ojo_fondo.png'
+        const img = new Image()
+        img.src = imgPath
+        await new Promise((resolve) => {
+          img.onload = resolve
+          img.onerror = resolve
         })
         
-        autoTable(doc, {
-          startY: 225,
-          head: [['Intensidad', 'Vistos/Total', 'Porcentaje']],
-          body: tablaData,
-          theme: 'grid',
-          headStyles: { fillColor: [10, 25, 40], textColor: [255, 255, 255], fontStyle: 'bold' },
-          margin: { left: 20, right: 20 }
-        })
+        if (img.complete && img.naturalHeight !== 0) {
+          doc.addImage(img, 'PNG', 10, 8, 20, 20)
+        } else {
+          doc.setFont('times', 'normal')
+          doc.setFontSize(16)
+          doc.setTextColor(10, 25, 40)
+          doc.text('👁️', 15, 20)
+        }
+      } catch {
+        doc.setFont('times', 'normal')
+        doc.setFontSize(16)
+        doc.setTextColor(10, 25, 40)
+        doc.text('👁️', 15, 20)
       }
-      
-      const finalY = (doc as any).lastAutoTable?.finalY || 250
+
+      doc.setFont('times', 'normal')
       doc.setFontSize(9)
       doc.setTextColor(150, 150, 150)
-      doc.text('Informe generado automáticamente · Campimetría cinética by JozseDev', 20, finalY + 20)
-      
-      doc.save(`perimetria-${ojoActual}-${new Date().toISOString().slice(0, 10)}.pdf`)
-      alert('✅ PDF generado exitosamente')
-      
-    } catch (error) {
-      console.error('❌ Error:', error)
-      alert('Error al generar PDF: ' + error)
+      doc.text(`Página ${currentPage}`, pageWidth - 20, 20, { align: 'right' })
     }
-  }
 
-  return (
+    // ============================================
+    // FUNCIÓN PARA AGREGAR PIE DE PÁGINA
+    // ============================================
+    const addFooter = () => {
+      doc.setFont('times', 'normal')
+      doc.setFontSize(8)
+      doc.setTextColor(150, 150, 150)
+      doc.text(
+        'Informe generado automáticamente · Campimetría cinética by JozseDev',
+        pageWidth / 2,
+        pageHeight - 10,
+        { align: 'center' }
+      )
+    }
+
+    // ============================================
+    // AGREGAR ENCABEZADO A LA PRIMERA PÁGINA
+    // ============================================
+    await addHeader()
+
+    // ============================================
+    // TÍTULO PRINCIPAL
+    // ============================================
+    doc.setFont('times', 'bold')
+    doc.setFontSize(22)
+    doc.setTextColor(10, 25, 40)
+    doc.text('Campimetría cinética', pageWidth / 2, 35, { align: 'center' })
+
+    doc.setFont('times', 'normal')
+    doc.setFontSize(10)
+    doc.setTextColor(100, 100, 100)
+    doc.text(`by JozseDev © ${new Date().getFullYear()}`, pageWidth / 2, 42, { align: 'center' })
+
+    // ============================================
+    // DATOS DEL PACIENTE
+    // ============================================
+    let yPos = 55
+
+    doc.setFillColor(245, 245, 250)
+    doc.roundedRect(15, yPos - 5, pageWidth - 30, 35, 3, 3, 'F')
+
+    doc.setFont('times', 'bold')
+    doc.setFontSize(10)
+    doc.setTextColor(10, 25, 40)
+
+    // ✅ TEXTO SIN CARACTERES EXTRAÑOS
+    const pacienteText = nombrePaciente ? `Paciente: ${nombrePaciente}` : 'Paciente: No especificado'
+    const examinadorText = nombreExaminador ? `Examinador: ${nombreExaminador}` : 'Examinador: No especificado'
+    const fechaText = `Fecha: ${fechaExamen.toLocaleDateString()} - ${horaExamen}`
+
+    doc.text(pacienteText, 20, yPos)
+    yPos += 7
+    doc.text(examinadorText, 20, yPos)
+    yPos += 7
+    doc.setFont('times', 'normal')
+    doc.text(fechaText, 20, yPos)
+    yPos += 15
+
+    // ============================================
+    // DATOS DEL EXAMEN
+    // ============================================
+    const respuestasOjo = respuestas.filter(r => r.ojo === ojoActual)
+
+    doc.setFillColor(250, 250, 255)
+    doc.roundedRect(15, yPos - 5, pageWidth - 30, 20, 3, 3, 'F')
+
+    doc.setFont('times', 'normal')
+    doc.setFontSize(10)
+    doc.setTextColor(50, 50, 50)
+    doc.text(`Ojo evaluado: ${ojoActual === 'OD' ? 'Derecho (OD)' : 'Izquierdo (OI)'}`, 20, yPos)
+    yPos += 6
+    doc.text(`Total de estímulos: ${respuestasOjo.length}`, 20, yPos)
+    yPos += 15
+
+    // ============================================
+    // ESTADÍSTICAS
+    // ============================================
+    const vistas = respuestasOjo.filter(r => r.visto).length
+    const noVistas = respuestasOjo.filter(r => !r.visto).length
+    const porcentajeVisto = respuestasOjo.length > 0 ? ((vistas / respuestasOjo.length) * 100).toFixed(1) : '0'
+    const porcentajeNoVisto = (100 - parseFloat(porcentajeVisto)).toFixed(1)
+
+    doc.setFillColor(240, 248, 255)
+    doc.roundedRect(15, yPos - 5, pageWidth - 30, 20, 3, 3, 'F')
+
+    // ✅ TEXTO CON FORMATO CORRECTO
+    doc.setFont('times', 'normal')
+    doc.setTextColor(40, 167, 69)
+    doc.text(`Vistos: ${vistas} (${porcentajeVisto}%)`, 20, yPos)
+    doc.setTextColor(220, 53, 69)
+    doc.text(`No vistos: ${noVistas} (${porcentajeNoVisto}%)`, pageWidth / 2 + 10, yPos)
+    yPos += 15
+
+    // ============================================
+    // GRÁFICO
+    // ============================================
+    const imgWidth = 140
+    const imgX = (pageWidth - imgWidth) / 2
+    doc.addImage(imgData, 'PNG', imgX, yPos, imgWidth, 140)
+    yPos += 150
+
+    // Verificar si necesitamos nueva página para la tabla
+    if (yPos > pageHeight - 60) {
+      doc.addPage()
+      currentPage++
+      await addHeader()
+      yPos = 40
+    }
+
+    // ============================================
+    // TABLA DE RESULTADOS
+    // ============================================
+    if (respuestasOjo.length > 0) {
+      const intensidades = ['0.0', '0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', '0.8', '0.9', '1.0']
+      const tablaData = intensidades.map(int => {
+        const respuestasInt = respuestasOjo.filter(r => r.intensidad === int)
+        const vistasInt = respuestasInt.filter(r => r.visto).length
+        const totalInt = respuestasInt.length
+
+        return [
+          int,
+          `${vistasInt}/${totalInt}`,
+          `${totalInt > 0 ? ((vistasInt / totalInt) * 100).toFixed(0) : 0}%`
+        ]
+      })
+
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Intensidad', 'Vistos/Total', 'Porcentaje']],
+        body: tablaData,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [10, 25, 40],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          halign: 'center'
+        },
+        columnStyles: {
+          0: { cellWidth: 30, halign: 'center' },
+          1: { cellWidth: 40, halign: 'center' },
+          2: { cellWidth: 30, halign: 'center' }
+        },
+        margin: { left: (pageWidth - 120) / 2 },
+        styles: {
+          fontSize: 9,
+          cellPadding: 3,
+          halign: 'center',
+          font: 'times' // ✅ FORZAR FUENTE EN TABLA
+        },
+        alternateRowStyles: {
+          fillColor: [245, 245, 250]
+        }
+      })
+    }
+
+    // ============================================
+    // AGREGAR PIE DE PÁGINA
+    // ============================================
+    addFooter()
+
+    // ============================================
+    // GUARDAR PDF
+    // ============================================
+    doc.save(`campimetria-${ojoActual}-${new Date().toISOString().slice(0, 10)}.pdf`)
+    alert('✅ PDF generado exitosamente')
+
+  } catch (error) {
+    console.error('❌ Error:', error)
+    alert('Error al generar PDF: ' + error)
+  }
+}
+
+return (
     <>
-      {mostrarIntro ? (
+      {/* ============================================ */}
+      {/* PANTALLA 1: INTRO */}
+      {/* ============================================ */}
+      {mostrarIntro && !mostrarDatosPaciente && (
         <div style={{ 
           position: 'fixed',
           top: 0,
@@ -291,19 +451,19 @@ setTimeout(() => setFeedback(''), 1500)
           zIndex: 10000
         }}>
           <div style={{ marginBottom: '20px' }}>
-  <img 
-    src="/Ojo_fondo.png" 
-    alt="JozseDev Medical"
-    style={{
-      width: isMobile ? '150px' : '300px',
-      height: 'auto',
-      filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))'
-    }}
-  />
-</div>
+            <img 
+              src="/Ojo_fondo.png" 
+              alt="JozseDev Medical"
+              style={{
+                width: isMobile ? '150px' : '300px',
+                height: 'auto',
+                filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))'
+              }}
+            />
+          </div>
           <h1 style={{ 
-            fontSize: isMobile ? '3rem' : '4rem',
-            fontFamily: "'Fenix, serif", 
+            fontSize: isMobile ? '2.5rem' : '4rem',
+            fontFamily: "'Fenix', serif", 
             margin: '0 0 20px 0', 
             fontWeight: '700',
             color: 'white'
@@ -311,7 +471,7 @@ setTimeout(() => setFeedback(''), 1500)
             Campimetría cinética
           </h1>
           <p style={{ 
-            fontSize: isMobile ? '1rem' : '2rem', 
+            fontSize: isMobile ? '1.1rem' : '1.5rem', 
             marginBottom: '40px', 
             opacity: 0.9, 
             maxWidth: '600px' 
@@ -319,8 +479,9 @@ setTimeout(() => setFeedback(''), 1500)
             Tecnología médica para diagnóstico visual
           </p>
           <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            {/* ✅ BOTÓN CORREGIDO: Activa la pantalla de datos */}
             <button
-              onClick={() => setMostrarIntro(false)}
+              onClick={() => setMostrarDatosPaciente(true)}
               style={{
                 padding: isMobile ? '16px 32px' : '14px 28px',
                 background: '#28a745',
@@ -342,10 +503,10 @@ setTimeout(() => setFeedback(''), 1500)
                 e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.3)'
               }}
             >
-              ▶ Comenzar Examen
+              Ingresar
             </button>
             <button
-              onClick={() => alert('Perimetría de Campo Visual · Versión 1.0\nDesarrollado por JozseDev © 2026\nTecnología médica para diagnóstico visual')}
+              onClick={() => alert('Campimetría cinética · Versión 1.0\nDesarrollado por JozseDev © 2026\nTecnología médica para diagnóstico visual')}
               style={{
                 padding: isMobile ? '16px 32px' : '14px 28px',
                 background: 'transparent',
@@ -379,254 +540,471 @@ setTimeout(() => setFeedback(''), 1500)
             by <strong>JozseDev</strong> © {new Date().getFullYear()}
           </footer>
         </div>
-      ) : (
-    <div style={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      alignItems: 'center', 
-      justifyContent: 'flex-start',
-      minHeight: '100vh',
-      padding: isMobile ? '10px' : '20px',
-      boxSizing: 'border-box',
-      background: 'linear-gradient(145deg, #0a4b6e 0%, #0a1928 100%)'
-    }}>
-      {/* ✅ FEEDBACK VISUAL - PONELO ACÁ, ARRIBA DEL TÍTULO */}
-    {feedback && (
-      <div style={{
-        position: 'fixed',
-        top: '20px',
-        right: '20px',
-        background: '#28a745',
-        color: 'white',
-        padding: '12px 24px',
-        borderRadius: '8px',
-        fontWeight: 'bold',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-        zIndex: 9999,
-        animation: 'slideIn 0.3s ease'
-      }}>
-        {feedback}
-      </div>
-    )}
-      
-      <h1 style={{ 
-        fontSize: isMobile ? '1.5rem' : '2rem',
-        textAlign: 'center',
-        margin: isMobile ? '5px 0 10px 0' : '10px 0 20px 0',
-        wordBreak: 'break-word',
-        color: '#ffffff'
-      }}>
-        {isMobile ? 'Campimetría cinética' : 'Campimetría cinética'}
-      </h1>
-      
-      {/* SELECTOR DE INTENSIDAD - GOLDMANN REAL */}
-      <div style={{ 
-        marginBottom: isMobile ? '10px' : '15px', 
-        display: 'flex', 
-        flexWrap: 'wrap',
-        gap: isMobile ? '5px' : '8px', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        width: '100%'
-      }}>
-        <span style={{ fontWeight: 'bold', marginRight: '5px', color:'#ffffff' }}>Intensidad:</span>
-        {Object.entries(intensidadConfig).map(([key]) => (
-          <button
-            key={key}
-            onClick={() => setIntensidadActual(key as IntensidadGoldmann)}
-            style={{
-              padding: isMobile ? '6px 10px' : '4px 8px',
-              background: intensidadActual === key ? '#4d8fcc' : '#f0f0f0',
-              color: intensidadActual === key ? 'white' : '#333',
-              border: intensidadActual === key ? '2px solid #ffffff' : '1px solid #000000',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontWeight: intensidadActual === key ? 'bold' : 'normal',
-              fontSize: isMobile ? '0.8rem' : '0.9rem',
-              boxShadow: intensidadActual === key ? '0 0 5px rgba(77,143,204,0.5)' : 'none'
-            }}
-          >
-            {key}
-          </button>
-        ))}
-      </div>
+      )}
 
-      {/* SELECTOR DE OJO */}
-      <div style={{ 
-        marginBottom: isMobile ? '15px' : '15px', 
-        display: 'flex', 
-        flexWrap: 'wrap',
-        gap: isMobile ? '10px' : '10px', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        width: '100%'
-      }}>
-        <span style={{ fontWeight: 'bold', color:'#ffffff' }}>Ojo:</span>
-        <button
-          onClick={() => setOjoActual('OD')}
-          style={{
-            padding: isMobile ? '10px 20px' : '6px 12px',
-            background: ojoActual === 'OD' ? '#4d8fcc' : '#eee',
-            color: ojoActual === 'OD' ? 'white' : '#333',
-            border: ojoActual === 'OD' ? '1px solid #ffffff' : '1px solid #000000',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontWeight: ojoActual === 'OD' ? 'bold' : 'normal',
-            flex: isMobile ? '1 0 40%' : 'none'
-          }}
-        >
-          👁️ {isMobile ? 'OD' : 'Derecho (OD)'}
-        </button>
-        <button
-          onClick={() => setOjoActual('OI')}
-          style={{
-            padding: isMobile ? '10px 20px' : '6px 12px',
-            background: ojoActual === 'OI' ? '#4d8fcc' : '#eee',
-            color: ojoActual === 'OI' ? 'white' : '#333',
-            border: ojoActual === 'OI' ? '1px solid #ffffff' : '1px solid #000000',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontWeight: ojoActual === 'OI' ? 'bold' : 'normal',
-            flex: isMobile ? '1 0 40%' : 'none'
-          }}
-        >
-          👁️ {isMobile ? 'OI' : 'Izquierdo (OI)'}
-        </button>
-      </div>
-      
-      {/* BOTONES PRINCIPALES */}
-      <div style={{ 
-        marginBottom: isMobile ? '20px' : '20px', 
-        display: 'flex', 
-        gap: isMobile ? '15px' : '10px',
-        justifyContent: 'center',
-        width: '100%'
-      }}>
-        <button 
-          onClick={() => setVista('examen')}
-          style={{ 
-            padding: isMobile ? '12px 20px' : '8px 16px', 
-            background: vista === 'examen' ? '#28a745' : '#ccc',
-            color: 'white',
-            border: vista === 'examen' ? '1px solid #ffffff' : '1px solid #000000',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontWeight: 'bold',
-            flex: isMobile ? '1 0 40%' : 'none'
-          }}
-        >
-          Tomar Examen
-        </button>
-        <button 
-          onClick={() => setVista('resultados')}
-          style={{ 
-            padding: isMobile ? '12px 20px' : '8px 16px', 
-            background: vista === 'resultados' ? '#28a745' : '#ccc',
-            color: 'white',
-            border: vista === 'resultados' ? '1px solid #ffffff' : '1px solid #000000',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontWeight: 'bold',
-            flex: isMobile ? '1 0 40%' : 'none'
-          }}
-        >
-          Ver Resultados
-        </button>
-      </div>
-
-      {vista === 'examen' ? (
-        <>
-          <div style={{ 
-            width: '100%', 
-            maxWidth: '600px', 
-            aspectRatio: '1/1',
-            margin: '0 auto'
-          }}>
-            <canvas 
-              ref={canvasRef}
-              width={600}
-              height={600}
-              onClick={handleCanvasClick}
-              style={{ 
-                width: '100%',
-                height: '100%',
-                border: '2px solid black',
-                backgroundColor: 'white'
-              }}
-            />
-          </div>
-          <p style={{ 
-            marginTop: '15px', 
-            fontSize: isMobile ? '0.9rem' : '1rem',
-            textAlign: 'center',
-            color:'#ffffff'
-          }}>
-            Posición {indiceActual + 1} de {posicionesExamen.length} · 
-            {posicionesExamen[indiceActual]?.grado}° · 
-            Ojo: {ojoActual === 'OD' ? 'Derecho' : 'Izquierdo'}
-          </p>
-        </>
-      ) : (
-        <div style={{ 
-          textAlign: 'center', 
+      {/* ============================================ */}
+      {/* PANTALLA 2: DATOS DEL PACIENTE */}
+      {/* ============================================ */}
+      {mostrarDatosPaciente && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
           width: '100%',
-          maxWidth: '600px',
-          margin: '0 auto'
+          height: '100vh',
+          background: 'linear-gradient(145deg, #0a4b6e 0%, #0a1928 100%)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'white',
+          padding: '20px',
+          boxSizing: 'border-box',
+          zIndex: 10000,
+          overflowY: 'auto'
         }}>
-          <h2 style={{ 
-            fontSize: isMobile ? '1.3rem' : '1.5rem',
-            color: '#ffffff'
+          <div style={{
+            width: '100%',
+            maxWidth: '500px',
+            background: 'rgba(255,255,255,0.1)',
+            padding: '30px',
+            borderRadius: '20px',
+            backdropFilter: 'blur(10px)'
           }}>
-            Resultados del Examen
-          </h2>
-          
-          <div style={{ 
-            width: '100%', 
-            maxWidth: '600px', 
-            aspectRatio: '1/1',
-            margin: '0 auto'
-          }}>
-            <Islotes respuestas={respuestas.filter(r => r.ojo === ojoActual)} />
+            <h2 style={{
+              textAlign: 'center',
+              marginBottom: '30px',
+              color: 'white'
+            }}>
+              Datos del examen
+            </h2>
+
+            {/* FECHA */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{
+                display: 'block',
+                color: 'white',
+                marginBottom: '8px',
+                fontSize: '0.9rem'
+              }}>
+                📅 Fecha
+              </label>
+              <input
+                type="date"
+                value={fechaExamen.toISOString().split('T')[0]}
+                onChange={(e) => setFechaExamen(new Date(e.target.value))}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontSize: '1rem',
+                  background: 'white'
+                }}
+              />
+            </div>
+
+            {/* HORA */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{
+                display: 'block',
+                color: 'white',
+                marginBottom: '8px',
+                fontSize: '0.9rem'
+              }}>
+                ⏰ Hora
+              </label>
+              <input
+                type="time"
+                value={horaExamen}
+                onChange={(e) => setHoraExamen(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontSize: '1rem',
+                  background: 'white'
+                }}
+              />
+            </div>
+
+            {/* NOMBRE DEL PACIENTE */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{
+                display: 'block',
+                color: 'white',
+                marginBottom: '8px',
+                fontSize: '0.9rem'
+              }}>
+                👤 Nombre del paciente
+              </label>
+              <input
+                type="text"
+                value={nombrePaciente}
+                onChange={(e) => setNombrePaciente(e.target.value)}
+                placeholder="Ej: Juan Pérez"
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontSize: '1rem',
+                  background: 'white'
+                }}
+              />
+            </div>
+
+            {/* NOMBRE DEL EXAMINADOR */}
+            <div style={{ marginBottom: '30px' }}>
+              <label style={{
+                display: 'block',
+                color: 'white',
+                marginBottom: '8px',
+                fontSize: '0.9rem'
+              }}>
+                🩺 Examinador
+              </label>
+              <input
+                type="text"
+                value={nombreExaminador}
+                onChange={(e) => setNombreExaminador(e.target.value)}
+                placeholder="Ej: Dr. González"
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontSize: '1rem',
+                  background: 'white'
+                }}
+              />
+            </div>
+
+            {/* BOTONES */}
+            <div style={{ display: 'flex', gap: '15px' }}>
+              <button
+                onClick={() => setMostrarDatosPaciente(false)}
+                style={{
+                  flex: 1,
+                  padding: '14px',
+                  background: 'transparent',
+                  color: 'white',
+                  border: '2px solid white',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  cursor: 'pointer'
+                }}
+              >
+                Volver
+              </button>
+              <button
+                onClick={() => {
+                  setMostrarDatosPaciente(false)
+                  setMostrarIntro(false)
+                  setIndiceActual(0)
+                }}
+                style={{
+                  flex: 1,
+                  padding: '14px',
+                  background: '#28a745',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  cursor: 'pointer'
+                }}
+              >
+                Comenzar Examen
+              </button>
+            </div>
           </div>
-          
-          <p style={{ marginTop: '10px', fontSize: isMobile ? '0.8rem' : '1rem', color: '#ffffff' }}>
-            🟢 Visto | 🔴 No visto | ⚫ Isóptera
-          </p>
-          
-          <button 
-            onClick={exportarPDF}
-            style={{
-              marginTop: '20px',
-              padding: isMobile ? '12px 20px' : '8px 16px',
-              background: '#dc3545',
-              color: 'white',
-              border: '1px solid #ffffff',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              width: isMobile ? '100%' : 'auto'
-            }}
-          >
-            📄 Exportar a PDF
-          </button>
         </div>
       )}
-      
-      <footer style={{ 
-        marginTop: '30px', 
-        color: '#b8b8b8', 
-        fontSize: isMobile ? '11px' : '13px',
-        borderTop: '1px solid #b8b8b8',
-        paddingTop: '20px',
-        width: '100%',
-        textAlign: 'center'
-      }}>
-        Campimetría cinética · by <strong>JozseDev</strong> © {new Date().getFullYear()}
-      </footer>
-    </div>
-  )}
-  </>
+
+      {/* ============================================ */}
+      {/* PANTALLA 3: EXAMEN */}
+      {/* ============================================ */}
+      {!mostrarIntro && !mostrarDatosPaciente && (
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          justifyContent: 'flex-start',
+          minHeight: '100vh',
+          padding: isMobile ? '10px' : '20px',
+          boxSizing: 'border-box',
+          background: 'linear-gradient(145deg, #0a4b6e 0%, #0a1928 100%)'
+        }}>
+          {/* FEEDBACK VISUAL */}
+          {feedback && (
+            <div style={{
+              position: 'fixed',
+              top: '20px',
+              right: '20px',
+              background: '#28a745',
+              color: 'white',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              fontWeight: 'bold',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              zIndex: 9999,
+              animation: 'slideIn 0.3s ease'
+            }}>
+              {feedback}
+            </div>
+          )}
+          
+          <h1 style={{ 
+            fontSize: isMobile ? '1.5rem' : '2rem',
+            textAlign: 'center',
+            margin: isMobile ? '5px 0 10px 0' : '10px 0 20px 0',
+            wordBreak: 'break-word',
+            color: '#ffffff'
+          }}>
+            Campimetría cinética
+          </h1>
+          
+          {/* SELECTOR DE INTENSIDAD */}
+          <div style={{ 
+            marginBottom: isMobile ? '10px' : '15px', 
+            display: 'flex', 
+            flexWrap: 'wrap',
+            gap: isMobile ? '5px' : '8px', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            width: '100%'
+          }}>
+            <span style={{ fontWeight: 'bold', marginRight: '5px', color: '#ffffff' }}>Intensidad:</span>
+            {Object.entries(intensidadConfig).map(([key]) => (
+              <button
+                key={key}
+                onClick={() => setIntensidadActual(key as IntensidadGoldmann)}
+                style={{
+                  padding: isMobile ? '6px 10px' : '4px 8px',
+                  background: intensidadActual === key ? '#4d8fcc' : '#f0f0f0',
+                  color: intensidadActual === key ? 'white' : '#333',
+                  border: intensidadActual === key ? '2px solid #ffffff' : '1px solid #000000',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontWeight: intensidadActual === key ? 'bold' : 'normal',
+                  fontSize: isMobile ? '0.8rem' : '0.9rem',
+                  boxShadow: intensidadActual === key ? '0 0 5px rgba(77,143,204,0.5)' : 'none'
+                }}
+              >
+                {key}
+              </button>
+            ))}
+          </div>
+
+          {/* SELECTOR DE OJO */}
+          <div style={{ 
+            marginBottom: isMobile ? '15px' : '15px', 
+            display: 'flex', 
+            flexWrap: 'wrap',
+            gap: isMobile ? '10px' : '10px', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            width: '100%'
+          }}>
+            <span style={{ fontWeight: 'bold', color: '#ffffff' }}>Ojo:</span>
+            <button
+              onClick={() => setOjoActual('OD')}
+              style={{
+                padding: isMobile ? '10px 20px' : '6px 12px',
+                background: ojoActual === 'OD' ? '#4d8fcc' : '#eee',
+                color: ojoActual === 'OD' ? 'white' : '#333',
+                border: ojoActual === 'OD' ? '2px solid #ffffff' : '1px solid #000000',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: ojoActual === 'OD' ? 'bold' : 'normal',
+                flex: isMobile ? '1 0 40%' : 'none'
+              }}
+            >
+              👁️ {isMobile ? 'OD' : 'Derecho (OD)'}
+            </button>
+            <button
+              onClick={() => setOjoActual('OI')}
+              style={{
+                padding: isMobile ? '10px 20px' : '6px 12px',
+                background: ojoActual === 'OI' ? '#4d8fcc' : '#eee',
+                color: ojoActual === 'OI' ? 'white' : '#333',
+                border: ojoActual === 'OI' ? '2px solid #ffffff' : '1px solid #000000',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: ojoActual === 'OI' ? 'bold' : 'normal',
+                flex: isMobile ? '1 0 40%' : 'none'
+              }}
+            >
+              👁️ {isMobile ? 'OI' : 'Izquierdo (OI)'}
+            </button>
+          </div>
+          
+          {/* BOTONES PRINCIPALES */}
+          <div style={{ 
+            marginBottom: isMobile ? '20px' : '20px', 
+            display: 'flex', 
+            gap: isMobile ? '15px' : '10px',
+            justifyContent: 'center',
+            width: '100%'
+          }}>
+            <button 
+              onClick={() => {
+                setVista('examen')
+                setIndiceActual(0)
+              }}
+              style={{ 
+                padding: isMobile ? '12px 20px' : '8px 16px', 
+                background: vista === 'examen' ? '#28a745' : '#ccc',
+                color: 'white',
+                border: vista === 'examen' ? '2px solid #ffffff' : '1px solid #000000',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                flex: isMobile ? '1 0 40%' : 'none'
+              }}
+            >
+              Tomar Examen
+            </button>
+            <button 
+              onClick={() => setVista('resultados')}
+              style={{ 
+                padding: isMobile ? '12px 20px' : '8px 16px', 
+                background: vista === 'resultados' ? '#28a745' : '#ccc',
+                color: 'white',
+                border: vista === 'resultados' ? '2px solid #ffffff' : '1px solid #000000',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                flex: isMobile ? '1 0 40%' : 'none'
+              }}
+            >
+              Ver Resultados
+            </button>
+          </div>
+
+          {vista === 'examen' ? (
+            <>
+              <div style={{ 
+                width: '100%', 
+                maxWidth: '600px', 
+                aspectRatio: '1/1',
+                margin: '0 auto'
+              }}>
+                <canvas 
+                  ref={canvasRef}
+                  width={600}
+                  height={600}
+                  onClick={handleCanvasClick}
+                  style={{ 
+                    width: '100%',
+                    height: '100%',
+                    border: '2px solid black',
+                    backgroundColor: 'white'
+                  }}
+                />
+              </div>
+              <p style={{ 
+                marginTop: '15px', 
+                fontSize: isMobile ? '0.9rem' : '1rem',
+                textAlign: 'center',
+                color: '#ffffff'
+              }}>
+                Posición {indiceActual + 1} de {posicionesExamen.length} · 
+                {posicionesExamen[indiceActual]?.grado}° · 
+                Ojo: {ojoActual === 'OD' ? 'Derecho' : 'Izquierdo'}
+              </p>
+            </>
+          ) : (
+            <div style={{ 
+              textAlign: 'center', 
+              width: '100%',
+              maxWidth: '600px',
+              margin: '0 auto'
+            }}>
+              <h2 style={{ 
+                fontSize: isMobile ? '1.3rem' : '1.5rem',
+                color: '#ffffff'
+              }}>
+                Resultados del Examen
+              </h2>
+
+              {/* DATOS DEL PACIENTE EN RESULTADOS */}
+              {(nombrePaciente || nombreExaminador) && (
+                <div style={{
+                  background: 'rgba(255,255,255,0.1)',
+                  padding: '15px',
+                  borderRadius: '8px',
+                  marginBottom: '20px',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  textAlign: 'left',
+                  color: 'white'
+                }}>
+                  <p style={{ margin: '5px 0' }}>
+                    <strong>📅 Fecha:</strong> {fechaExamen.toLocaleDateString()} - {horaExamen}
+                  </p>
+                  {nombrePaciente && (
+                    <p style={{ margin: '5px 0' }}>
+                      <strong>👤 Paciente:</strong> {nombrePaciente}
+                    </p>
+                  )}
+                  {nombreExaminador && (
+                    <p style={{ margin: '5px 0' }}>
+                      <strong>🩺 Examinador:</strong> {nombreExaminador}
+                    </p>
+                  )}
+                </div>
+              )}
+              
+              <div style={{ 
+                width: '100%', 
+                maxWidth: '600px', 
+                aspectRatio: '1/1',
+                margin: '0 auto'
+              }}>
+                <Islotes respuestas={respuestas.filter(r => r.ojo === ojoActual)} />
+              </div>
+              
+              <p style={{ marginTop: '10px', fontSize: isMobile ? '0.8rem' : '1rem', color: '#ffffff' }}>
+                🟢 Visto | 🔴 No visto | ⚫ Isóptera
+              </p>
+              
+              <button 
+                onClick={exportarPDF}
+                style={{
+                  marginTop: '20px',
+                  padding: isMobile ? '12px 20px' : '8px 16px',
+                  background: '#dc3545',
+                  color: 'white',
+                  border: '2px solid #b02a37',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  width: isMobile ? '100%' : 'auto'
+                }}
+              >
+                📄 Exportar a PDF
+              </button>
+            </div>
+          )}
+          
+          <footer style={{ 
+            marginTop: '30px', 
+            color: '#b8b8b8', 
+            fontSize: isMobile ? '11px' : '13px',
+            borderTop: '1px solid #b8b8b8',
+            paddingTop: '20px',
+            width: '100%',
+            textAlign: 'center'
+          }}>
+            Campimetría cinética · by <strong>JozseDev</strong> © {new Date().getFullYear()}
+          </footer>
+        </div>
+      )}
+    </>
   )
-}
+}  // ← Cierre de la función App
 
 export default App
