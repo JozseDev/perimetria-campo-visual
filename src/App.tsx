@@ -131,48 +131,48 @@ function App() {
   }, [indiceActual, posicionesExamen])
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current
-    if (!canvas) return
+  const canvas = canvasRef.current
+  if (!canvas) return
 
-    const rect = canvas.getBoundingClientRect()
-    const scaleX = canvas.width / rect.width
-    const scaleY = canvas.height / rect.height
+  const rect = canvas.getBoundingClientRect()
+  const scaleX = canvas.width / rect.width
+  const scaleY = canvas.height / rect.height
 
-    const canvasX = (e.clientX - rect.left) * scaleX
-    const canvasY = (e.clientY - rect.top) * scaleY
+  const canvasX = (e.clientX - rect.left) * scaleX
+  const canvasY = (e.clientY - rect.top) * scaleY
 
-    const dx = canvasX - estimuloPos.x
-    const dy = canvasY - estimuloPos.y
-    const distancia = Math.sqrt(dx * dx + dy * dy)
+  const dx = canvasX - estimuloPos.x
+  const dy = canvasY - estimuloPos.y
+  const distancia = Math.sqrt(dx * dx + dy * dy)
 
-    if (posicionesExamen.length > 0 && indiceActual < posicionesExamen.length) {
-      const posActual = posicionesExamen[indiceActual]
-      const config = intensidadConfig[intensidadActual]
-      
-      const nuevaRespuesta = {
-        id: crypto.randomUUID(),
-        angulo: posActual.angulo,
-        distancia: posActual.distancia,
-        grado: posActual.grado,
-        intensidad: intensidadActual,
-        tamaño: config.tamaño,
-        ojo: ojoActual,
-        visto: distancia < 20,
-        timestamp: new Date().toLocaleString()
-      }
-
-      setRespuestas([...respuestas, nuevaRespuesta])
-      console.log('📋 Respuesta:', nuevaRespuesta)
+  if (posicionesExamen.length > 0 && indiceActual < posicionesExamen.length) {
+    const posActual = posicionesExamen[indiceActual]
+    const config = intensidadConfig[intensidadActual as IntensidadGoldmann]
+    
+    const nuevaRespuesta = {
+      id: crypto.randomUUID(),
+      angulo: posActual.angulo,
+      distancia: posActual.distancia,
+      grado: posActual.grado,
+      intensidad: intensidadActual,
+      tamaño: config.tamaño,
+      ojo: ojoActual,
+      visto: distancia < 20,
+      timestamp: new Date().toLocaleString()
     }
 
-    if (indiceActual < posicionesExamen.length - 1) {
-      setIndiceActual(indiceActual + 1)
-    } else {
-      alert('🎉 ¡Examen completado!')
-      console.log('📊 Total de respuestas:', respuestas)
-      setIndiceActual(0)
-    }
+    setRespuestas([...respuestas, nuevaRespuesta])
+    console.log('📋 Respuesta:', nuevaRespuesta)
   }
+
+  if (indiceActual < posicionesExamen.length - 1) {
+    setIndiceActual(indiceActual + 1)
+  } else {
+    alert('🎉 ¡Examen completado!')
+    console.log('📊 Total de respuestas:', respuestas)
+    setIndiceActual(0)
+  }
+}
 
   const exportarPDF = async () => {
     try {
