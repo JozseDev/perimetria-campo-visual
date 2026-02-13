@@ -303,7 +303,7 @@ setTimeout(() => setFeedback(''), 1500)
         textAlign: 'center',
         margin: isMobile ? '5px 0 10px 0' : '10px 0 20px 0',
         wordBreak: 'break-word',
-        color: '#0a1928'
+        color: '#ffffff'
       }}>
         {isMobile ? 'Perimetría · JozseDev' : 'Perimetría de Campo Visual · JozseDev'}
       </h1>
