@@ -14,6 +14,7 @@ function App() {
   const [intensidadActual, setIntensidadActual] = useState<IntensidadGoldmann>('0.0')
   const [ojoActual, setOjoActual] = useState<'OD' | 'OI'>('OD')
   const [feedback, setFeedback] = useState('')
+  const [mostrarIntro, setMostrarIntro] = useState(true)
 
   // Configuración de intensidades estilo Goldmann real
   const intensidadConfig = {
@@ -129,7 +130,7 @@ function App() {
       ctx.font = 'bold 12px Arial'
       ctx.fillText(`${pos.grado}°`, estX + 15, estY - 15)
     }
-  }, [indiceActual, posicionesExamen, vista])  // ✅ AGREGAMOS vista
+  }, [indiceActual, posicionesExamen, vista, mostrarIntro]) // 👈 AGREGAMOS mostrarIntro
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
   const canvas = canvasRef.current
@@ -269,6 +270,115 @@ setTimeout(() => setFeedback(''), 1500)
   }
 
   return (
+    <>
+      {mostrarIntro ? (
+        <div style={{ 
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100vh',
+          background: 'linear-gradient(145deg, #0a4b6e 0%, #0a1928 100%)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'white',
+          textAlign: 'center',
+          padding: '20px',
+          boxSizing: 'border-box',
+          zIndex: 10000
+        }}>
+          <div style={{ marginBottom: '20px' }}>
+  <img 
+    src="/Ojo_fondo.png" 
+    alt="JozseDev Medical"
+    style={{
+      width: isMobile ? '150px' : '300px',
+      height: 'auto',
+      filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))'
+    }}
+  />
+</div>
+          <h1 style={{ 
+            fontSize: isMobile ? '3rem' : '4rem',
+            fontFamily: "'Fenix, serif", 
+            margin: '0 0 20px 0', 
+            fontWeight: '700',
+            color: 'white'
+          }}>
+            Campimetría cinética
+          </h1>
+          <p style={{ 
+            fontSize: isMobile ? '1rem' : '2rem', 
+            marginBottom: '40px', 
+            opacity: 0.9, 
+            maxWidth: '600px' 
+          }}>
+            Tecnología médica para diagnóstico visual
+          </p>
+          <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <button
+              onClick={() => setMostrarIntro(false)}
+              style={{
+                padding: isMobile ? '16px 32px' : '14px 28px',
+                background: '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '50px',
+                fontSize: isMobile ? '1.1rem' : '1.2rem',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                boxShadow: '0 8px 20px rgba(0,0,0,0.3)',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = 'scale(1.05)'
+                e.currentTarget.style.boxShadow = '0 12px 28px rgba(0,0,0,0.4)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = 'scale(1)'
+                e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.3)'
+              }}
+            >
+              ▶ Comenzar Examen
+            </button>
+            <button
+              onClick={() => alert('Perimetría de Campo Visual · Versión 1.0\nDesarrollado por JozseDev © 2026\nTecnología médica para diagnóstico visual')}
+              style={{
+                padding: isMobile ? '16px 32px' : '14px 28px',
+                background: 'transparent',
+                color: 'white',
+                border: '2px solid white',
+                borderRadius: '50px',
+                fontSize: isMobile ? '1.1rem' : '1.2rem',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.1)'
+                e.currentTarget.style.transform = 'scale(1.02)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'transparent'
+                e.currentTarget.style.transform = 'scale(1)'
+              }}
+            >
+              Información
+            </button>
+          </div>
+          <footer style={{
+            position: 'absolute',
+            bottom: '30px',
+            fontSize: '0.9rem',
+            opacity: 0.7,
+            color: 'white'
+          }}>
+            by <strong>JozseDev</strong> © {new Date().getFullYear()}
+          </footer>
+        </div>
+      ) : (
     <div style={{ 
       display: 'flex', 
       flexDirection: 'column', 
@@ -277,7 +387,7 @@ setTimeout(() => setFeedback(''), 1500)
       minHeight: '100vh',
       padding: isMobile ? '10px' : '20px',
       boxSizing: 'border-box',
-      background: 'linear-gradient(145deg, #9ca6be 0%, #054070 100%)'
+      background: 'linear-gradient(145deg, #0a4b6e 0%, #0a1928 100%)'
     }}>
       {/* ✅ FEEDBACK VISUAL - PONELO ACÁ, ARRIBA DEL TÍTULO */}
     {feedback && (
@@ -318,7 +428,7 @@ setTimeout(() => setFeedback(''), 1500)
         justifyContent: 'center',
         width: '100%'
       }}>
-        <span style={{ fontWeight: 'bold', marginRight: '5px' }}>Intensidad:</span>
+        <span style={{ fontWeight: 'bold', marginRight: '5px', color:'#ffffff' }}>Intensidad:</span>
         {Object.entries(intensidadConfig).map(([key]) => (
           <button
             key={key}
@@ -327,7 +437,7 @@ setTimeout(() => setFeedback(''), 1500)
               padding: isMobile ? '6px 10px' : '4px 8px',
               background: intensidadActual === key ? '#4d8fcc' : '#f0f0f0',
               color: intensidadActual === key ? 'white' : '#333',
-              border: intensidadActual === key ? '2px solid #0a1928' : '1px solid #ccc',
+              border: intensidadActual === key ? '2px solid #ffffff' : '1px solid #000000',
               borderRadius: '4px',
               cursor: 'pointer',
               fontWeight: intensidadActual === key ? 'bold' : 'normal',
@@ -350,14 +460,14 @@ setTimeout(() => setFeedback(''), 1500)
         justifyContent: 'center',
         width: '100%'
       }}>
-        <span style={{ fontWeight: 'bold' }}>Ojo:</span>
+        <span style={{ fontWeight: 'bold', color:'#ffffff' }}>Ojo:</span>
         <button
           onClick={() => setOjoActual('OD')}
           style={{
             padding: isMobile ? '10px 20px' : '6px 12px',
             background: ojoActual === 'OD' ? '#4d8fcc' : '#eee',
             color: ojoActual === 'OD' ? 'white' : '#333',
-            border: 'none',
+            border: ojoActual === 'OD' ? '1px solid #ffffff' : '1px solid #000000',
             borderRadius: '4px',
             cursor: 'pointer',
             fontWeight: ojoActual === 'OD' ? 'bold' : 'normal',
@@ -372,7 +482,7 @@ setTimeout(() => setFeedback(''), 1500)
             padding: isMobile ? '10px 20px' : '6px 12px',
             background: ojoActual === 'OI' ? '#4d8fcc' : '#eee',
             color: ojoActual === 'OI' ? 'white' : '#333',
-            border: 'none',
+            border: ojoActual === 'OI' ? '1px solid #ffffff' : '1px solid #000000',
             borderRadius: '4px',
             cursor: 'pointer',
             fontWeight: ojoActual === 'OI' ? 'bold' : 'normal',
@@ -395,9 +505,9 @@ setTimeout(() => setFeedback(''), 1500)
           onClick={() => setVista('examen')}
           style={{ 
             padding: isMobile ? '12px 20px' : '8px 16px', 
-            background: vista === 'examen' ? '#007bff' : '#ccc',
+            background: vista === 'examen' ? '#28a745' : '#ccc',
             color: 'white',
-            border: 'none',
+            border: vista === 'examen' ? '1px solid #ffffff' : '1px solid #000000',
             borderRadius: '4px',
             cursor: 'pointer',
             fontWeight: 'bold',
@@ -412,7 +522,7 @@ setTimeout(() => setFeedback(''), 1500)
             padding: isMobile ? '12px 20px' : '8px 16px', 
             background: vista === 'resultados' ? '#28a745' : '#ccc',
             color: 'white',
-            border: 'none',
+            border: vista === 'resultados' ? '1px solid #ffffff' : '1px solid #000000',
             borderRadius: '4px',
             cursor: 'pointer',
             fontWeight: 'bold',
@@ -447,7 +557,8 @@ setTimeout(() => setFeedback(''), 1500)
           <p style={{ 
             marginTop: '15px', 
             fontSize: isMobile ? '0.9rem' : '1rem',
-            textAlign: 'center'
+            textAlign: 'center',
+            color:'#ffffff'
           }}>
             Posición {indiceActual + 1} de {posicionesExamen.length} · 
             {posicionesExamen[indiceActual]?.grado}° · 
@@ -461,7 +572,12 @@ setTimeout(() => setFeedback(''), 1500)
           maxWidth: '600px',
           margin: '0 auto'
         }}>
-          <h2 style={{ fontSize: isMobile ? '1.3rem' : '1.5rem' }}>Resultados del Examen</h2>
+          <h2 style={{ 
+            fontSize: isMobile ? '1.3rem' : '1.5rem',
+            color: '#ffffff'
+          }}>
+            Resultados del Examen
+          </h2>
           
           <div style={{ 
             width: '100%', 
@@ -472,7 +588,7 @@ setTimeout(() => setFeedback(''), 1500)
             <Islotes respuestas={respuestas.filter(r => r.ojo === ojoActual)} />
           </div>
           
-          <p style={{ marginTop: '10px', fontSize: isMobile ? '0.8rem' : '1rem' }}>
+          <p style={{ marginTop: '10px', fontSize: isMobile ? '0.8rem' : '1rem', color: '#ffffff' }}>
             🟢 Visto | 🔴 No visto | ⚫ Isóptera
           </p>
           
@@ -483,7 +599,7 @@ setTimeout(() => setFeedback(''), 1500)
               padding: isMobile ? '12px 20px' : '8px 16px',
               background: '#dc3545',
               color: 'white',
-              border: 'none',
+              border: '1px solid #ffffff',
               borderRadius: '4px',
               cursor: 'pointer',
               fontWeight: 'bold',
@@ -507,6 +623,8 @@ setTimeout(() => setFeedback(''), 1500)
         Campimetría cinética · by <strong>JozseDev</strong> © {new Date().getFullYear()}
       </footer>
     </div>
+  )}
+  </>
   )
 }
 
